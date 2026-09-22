@@ -5,6 +5,7 @@ Har RUN_EVERY_HOURS me ek cycle. 100% free stack.
 """
 import os
 import time
+import json
 import traceback
 from datetime import datetime
 
@@ -22,15 +23,30 @@ def one_cycle():
         # Warmer pehle - Tier 1 warmup (account ko Tier 1 audience ke liye ready karta hai)
         warmer.run()
 
-        offers = scout.run()
-        summary["offers"] = len(offers)
-        if not offers:
-            summary["errors"].append("koi offer nahi mila")
-            return summary
-
-        # Sabse zyada payout wala campaign lo (Scout already sort karke deta hai)
-        top_campaign = offers[0]
-        print(f"[orchestrator] Top campaign: {top_campaign.get('offer_name')} | {top_campaign.get('commission')}")
+        # Pehle approved campaign check karo (Google Doc se user ne approve kiya ho)
+        top_campaign = None
+        approved_path = os.path.join(os.path.dirname(__file__), "data", "approved_campaign.json")
+        if os.path.exists(approved_path):
+            try:
+                with open(approved_path) as f:
+                    top_campaign = json.load(f)
+                print(f"[orchestrator] Approved campaign mila: {top_campaign.get('offer_name')} | {top_campaign.get('commission')}")
+            except Exception as e:
+                print(f"[orchestrator] Approved campaign read fail: {e}")
+        
+        # Agar approved nahi hai to Scout se dhoondho
+        if not top_campaign:
+            offers = scout.run()
+            summary["offers"] = len(offers)
+            if not offers:
+                summary["errors"].append("koi offer nahi mila")
+                return summary
+            # Sabse zyada payout wala campaign lo (Scout already sort karke deta hai)
+            top_campaign = offers[0]
+            print(f"[orchestrator] Top campaign: {top_campaign.get('offer_name')} | {top_campaign.get('commission')}")
+        else:
+            offers = [top_campaign]
+            summary["offers"] = 1
 
         # DriveReader: Campaign ka Google Drive brief padho
         drive_data = drive_reader.run(top_campaign)
