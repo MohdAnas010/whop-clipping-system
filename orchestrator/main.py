@@ -9,7 +9,7 @@ import traceback
 from datetime import datetime
 
 from agents import scout, scribe, editor, dispatcher, meta, competitor, warmer, stealth, innovator
-from agents import drive_reader, uploader, approver
+from agents import drive_reader, uploader, approver, campaign_finder
 
 RUN_EVERY_HOURS = int(os.environ.get("RUN_EVERY_HOURS", "6"))
 
@@ -66,6 +66,23 @@ def one_cycle():
         summary["competitor_recommendation"] = comp_insights.get("recommendation", "")
     except Exception as e:
         summary["errors"].append(f"competitor failed: {e}")
+
+    # CampaignFinder: Best Whop campaigns dhoondho (din me 1 baar)
+    # Google Doc "AUTO CLIP AGENT" me likhta hai, user approve karta hai
+    try:
+        import os as _os2
+        _cf_marker = "/app/data/.campaign_finder_last"
+        _run_cf = True
+        if _os2.path.exists(_cf_marker):
+            import time as _time2
+            if _time2.time() - _os2.path.getmtime(_cf_marker) < 86400:
+                _run_cf = False
+        if _run_cf:
+            best_campaigns = campaign_finder.run()
+            summary["best_campaigns"] = len(best_campaigns)
+            open(_cf_marker, "w").write("1")
+    except Exception as e:
+        summary["errors"].append(f"campaign_finder failed: {e}")
 
     # Innovator: GitHub/HF se naye ideas (din me 1 baar, rate limit se bachne ke liye)
     try:
