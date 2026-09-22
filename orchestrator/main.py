@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 
 from agents import scout, scribe, editor, dispatcher, meta, competitor, warmer, stealth, innovator
-from agents import drive_reader, uploader, approver, campaign_finder, whop_optimizer
+from agents import drive_reader, uploader, approver, campaign_finder, whop_optimizer, self_healing
 
 RUN_EVERY_HOURS = int(os.environ.get("RUN_EVERY_HOURS", "6"))
 
@@ -128,6 +128,14 @@ def one_cycle():
         summary["meta_insights"] = insights
     except Exception as e:
         summary["errors"].append(f"meta failed: {e}")
+
+    # SelfHealing: Mistakes ko automatically theek karo
+    # Agar 30 min tak user se instruction nahi aayi to khud action lo
+    try:
+        healing_report = self_healing.run(summary)
+        summary["self_healing"] = healing_report
+    except Exception as e:
+        summary["errors"].append(f"self_healing failed: {e}")
 
     print(f"===== CYCLE END: {summary} =====")
     return summary

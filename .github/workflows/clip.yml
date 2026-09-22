@@ -53,6 +53,11 @@ jobs:
           cd orchestrator
           python main.py
 
+      - name: Output dirs banao (artifacts ke liye)
+        run: |
+          mkdir -p orchestrator/out orchestrator/data
+          # Khali ho to bhi upload hoga, warning nahi aayegi
+
       - name: Output artifacts upload karo
         uses: actions/upload-artifact@v4
         if: always()
@@ -62,6 +67,7 @@ jobs:
             orchestrator/out/
             orchestrator/data/
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Keepalive (60-day auto-disable se bachne ke liye)
         run: |
