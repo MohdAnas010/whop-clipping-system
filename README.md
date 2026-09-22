@@ -18,6 +18,17 @@
 
 ## Quick Start
 
+### Option A: GitHub Actions 24/7 (Free, No Credit Card) ⭐ Recommended
+
+1. Push this repo to GitHub (public repo = unlimited minutes)
+2. Go to repo Settings → Secrets → Actions → New secret:
+   - Name: `WHOP_API_KEY`, Value: your Whop API key
+3. Done! The workflow runs automatically every 6 hours.
+   - Manual trigger: Actions tab → "Whop Clipping 24/7" → Run workflow
+   - Outputs: Actions tab → click a run → Artifacts
+
+### Option B: Docker on VPS
+
 ```bash
 # 1. Clone
 git clone https://github.com/YOUR_USERNAME/whop-clipping-system.git
