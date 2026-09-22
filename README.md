@@ -17,7 +17,7 @@
 | **Approver** | Submits to Whop for campaign approval after upload |
 | **Warmer** | Warms up account with Tier 1 engagement |
 | **WhopOptimizer** | Keeps Whop profile professional, checks Instagram-Whop connection |
-| **SelfHealing** | Auto-fixes mistakes, acts if no user instruction for 30min |
+| **SelfHealing (Father)** | Sab agents par nazar, unse seekhta hai, har cycle me aur smart hota hai |
 | **Competitor** | Analyzes competitors + best posting times |
 | **Meta** | Self-improves the system every cycle |
 | **Innovator** | Scouts GitHub/Hugging Face for upgrades |

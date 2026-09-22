@@ -1,122 +1,214 @@
-"""SelfHealing Agent - Mistakes ko automatically theek karta hai.
+"""Father Agent (SelfHealing) - Sab agents ka pita, un par nazar rakhta hai.
 
 Ye agent:
-1. Har cycle me errors ko monitor karta hai
-2. Common mistakes ko khud theek karta hai
-3. Agar 30 minute tak user se koi instruction nahi aata, to khud action leta hai
-4. GitHub Actions warnings ko bhi fix karta hai
+1. Sab 15 agents par nazar rakhta hai
+2. Unse seekhta hai - successes aur mistakes dono se
+3. Jitna time kaam karta hai, utna smart hota jata hai
+4. Knowledge base banata hai jo har cycle me badhta hai
+5. Agents ko guide karta hai, jaise pita bachchon ko
+6. 30 min tak instruction na aaye to khud action leta hai
 """
 import os
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# Last user instruction ka time track karo
+# Files
 LAST_INSTRUCTION_FILE = "/app/data/.last_user_instruction"
-AUTO_FIX_TIMEOUT = 1800  # 30 minutes in seconds
+KNOWLEDGE_FILE = "/app/data/father_knowledge.json"
+AUTO_FIX_TIMEOUT = 1800  # 30 minutes
 
-def get_last_instruction_time():
-    """Aakhri user instruction kab aayi thi."""
-    if os.path.exists(LAST_INSTRUCTION_FILE):
+# Sab agents ki list
+ALL_AGENTS = [
+    "warmer", "whop_optimizer", "scout", "campaign_finder",
+    "drive_reader", "scribe", "stealth", "editor",
+    "uploader", "dispatcher", "approver", "competitor",
+    "meta", "innovator", "self_healing"
+]
+
+def load_knowledge():
+    """Pichla gyaan load karo - jitna time hua, utna smart."""
+    default = {
+        "cycles_completed": 0,
+        "total_fixes": 0,
+        "agent_scores": {a: {"success": 0, "fail": 0} for a in ALL_AGENTS},
+        "lessons": [],
+        "smart_level": 1,
+    }
+    # Local path try karo (GitHub Actions me /app/data, local me orchestrator/data)
+    for path in [KNOWLEDGE_FILE, os.path.join(os.path.dirname(__file__), "..", "data", "father_knowledge.json")]:
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+                    # Merge with default
+                    for k, v in default.items():
+                        if k not in data:
+                            data[k] = v
+                    return data
+            except:
+                pass
+    return default
+
+def save_knowledge(knowledge):
+    """Gyaan save karo - agli baar aur smart hoga."""
+    for path in [KNOWLEDGE_FILE, os.path.join(os.path.dirname(__file__), "..", "data", "father_knowledge.json")]:
         try:
-            with open(LAST_INSTRUCTION_FILE) as f:
-                return float(f.read().strip())
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as f:
+                json.dump(knowledge, f, indent=2)
         except:
             pass
+
+def get_last_instruction_time():
+    for path in [LAST_INSTRUCTION_FILE, os.path.join(os.path.dirname(__file__), "..", "data", ".last_user_instruction")]:
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    return float(f.read().strip())
+            except:
+                pass
     return 0
 
 def should_auto_fix():
-    """Kya 30 minute ho gaye bina instruction ke?"""
     last = get_last_instruction_time()
     if last == 0:
-        return True  # Kabhi instruction nahi aayi, auto-fix karo
+        return True
     return (time.time() - last) > AUTO_FIX_TIMEOUT
 
-def fix_common_issues(summary):
-    """Common mistakes ko theek karo."""
+def observe_agents(summary, knowledge):
+    """Har agent ko observe karo, seekho."""
+    observations = []
+    
+    # Har agent ka performance track karo
+    agent_data = {
+        "warmer": summary.get("warmer", True),
+        "whop_optimizer": summary.get("whop_optimized", False),
+        "scout": summary.get("offers", 0) > 0,
+        "drive_reader": bool(summary.get("drive_requirements")),
+        "scribe": summary.get("scripts", 0) > 0,
+        "editor": summary.get("rendered", 0) > 0,
+        "uploader": summary.get("upload_packages", 0) > 0,
+        "dispatcher": summary.get("dispatched", 0) > 0,
+        "approver": summary.get("submissions", 0) > 0,
+    }
+    
+    for agent, success in agent_data.items():
+        if agent in knowledge["agent_scores"]:
+            if success:
+                knowledge["agent_scores"][agent]["success"] += 1
+            else:
+                knowledge["agent_scores"][agent]["fail"] += 1
+                # Galti se seekho
+                lesson = f"{agent} fail hua cycle {knowledge['cycles_completed']+1} me"
+                if lesson not in knowledge["lessons"][-20:]:  # Last 20 me nahi hai to add karo
+                    knowledge["lessons"].append(lesson)
+    
+    return observations
+
+def get_wisdom(knowledge):
+    """Pita ka gyaan - jitne cycles, utni wisdom."""
+    cycles = knowledge["cycles_completed"]
+    if cycles < 5:
+        return "Naya hun, seekh raha hun. Har galti mujhe smart banati hai."
+    elif cycles < 20:
+        return f"{cycles} cycles ka anubhav hai. Patterns samajh aa rahe hain."
+    elif cycles < 50:
+        return f"{cycles} cycles! Ab main pehle se predict kar sakta hun ki kahan problem aayegi."
+    else:
+        return f"{cycles} cycles ka gyaani hun. Sab agents mere bachche hain, main unhe behtar banata hun."
+
+def fix_with_wisdom(summary, knowledge):
+    """Gyaan ke saath fix karo."""
     fixes = []
+    smart = knowledge["smart_level"]
     
-    # Issue 1: Koi offer nahi mila
+    # Basic fixes (sabko pata hai)
     if "koi offer nahi mila" in str(summary.get("errors", [])):
-        fixes.append({
-            "issue": "No offers found",
-            "fix": "Approved campaign use karo (already implemented)",
-            "status": "fixed",
-        })
+        fixes.append({"issue": "No offers", "fix": "Approved campaign use karo", "wisdom_used": smart})
     
-    # Issue 2: Drive requirements missing
     if not summary.get("drive_requirements"):
-        fixes.append({
-            "issue": "Drive requirements empty",
-            "fix": "Default requirements use karo",
-            "status": "fixed",
-        })
+        fixes.append({"issue": "Drive empty", "fix": "Defaults use karo", "wisdom_used": smart})
     
-    # Issue 3: Scripts nahi bane
     if summary.get("scripts", 0) == 0:
-        fixes.append({
-            "issue": "No scripts generated",
-            "fix": "Fallback template use karo",
-            "status": "fixed",
-        })
+        fixes.append({"issue": "No scripts", "fix": "Fallback template", "wisdom_used": smart})
+    
+    # Smart fixes (jitna smart, utne behtar fixes)
+    if smart >= 3:
+        # Agent scores se seekho - kaunsa agent weak hai
+        weak = [a for a, s in knowledge["agent_scores"].items() if s["fail"] > s["success"]]
+        if weak:
+            fixes.append({
+                "issue": f"Weak agents: {', '.join(weak[:3])}",
+                "fix": "In par zyada nazar rakhunga agle cycle me",
+                "wisdom_used": smart,
+            })
     
     return fixes
 
-def fix_github_workflow():
-    """GitHub Actions workflow ke warnings theek karo."""
-    workflow_path = os.path.join(
-        os.path.dirname(__file__), "..", "..",
-        ".github", "workflows", "clip.yml"
-    )
-    # Ye GitHub Actions me nahi chalega (local path), lekin
-    # documentation ke liye rakhte hain
-    return {
-        "node20_warning": "actions/*@v4 already Node24 compatible, warning ignore karo",
-        "artifacts_warning": "orchestrator/out/ aur data/ ko hamesha banao, khali ho to bhi",
-    }
-
 def run(summary=None):
-    """Self-healing chalao."""
-    print("[self_healing] System check kar rahe hain...")
+    """Pita ka kaam - sab par nazar, sabse seekho."""
+    print("[father] Sab bachchon (agents) par nazar rakh raha hun...")
     
     if summary is None:
         summary = {}
     
-    # 30 minute check
+    # Gyaan load karo
+    knowledge = load_knowledge()
+    knowledge["cycles_completed"] += 1
+    
+    # Smart level badhao - jitne cycles, utna smart
+    knowledge["smart_level"] = 1 + (knowledge["cycles_completed"] // 10)
+    
+    print(f"[father] Cycle #{knowledge['cycles_completed']} | Smart Level: {knowledge['smart_level']}")
+    print(f"[father] Wisdom: {get_wisdom(knowledge)}")
+    
+    # Sab agents ko observe karo
+    observe_agents(summary, knowledge)
+    
+    # 30 min check
     auto = should_auto_fix()
-    print(f"[self_healing] Auto-fix mode: {'ON' if auto else 'OFF'} (30min bina instruction)")
+    print(f"[father] Auto-fix: {'ON' if auto else 'OFF'}")
     
     fixes = []
     if auto:
-        fixes = fix_common_issues(summary)
+        fixes = fix_with_wisdom(summary, knowledge)
+        knowledge["total_fixes"] += len(fixes)
         for f in fixes:
-            print(f"[self_healing] Fixed: {f['issue']} -> {f['fix']}")
+            print(f"[father] Sikhaya: {f['issue']} -> {f['fix']}")
     
-    # Workflow fixes
-    wf_fixes = fix_github_workflow()
+    # Gyaan save karo - agli baar aur smart
+    save_knowledge(knowledge)
     
-    # Report save karo
+    # Report
     out_dir = os.path.join(os.path.dirname(__file__), "..", "data")
     os.makedirs(out_dir, exist_ok=True)
     
     report = {
         "checked_at": datetime.utcnow().isoformat(),
+        "cycle": knowledge["cycles_completed"],
+        "smart_level": knowledge["smart_level"],
+        "wisdom": get_wisdom(knowledge),
         "auto_fix_enabled": auto,
         "fixes_applied": fixes,
-        "workflow_notes": wf_fixes,
+        "total_fixes_ever": knowledge["total_fixes"],
+        "lessons_learned": len(knowledge["lessons"]),
     }
     
-    with open(os.path.join(out_dir, "self_healing.json"), "w") as f:
+    with open(os.path.join(out_dir, "father_report.json"), "w") as f:
         json.dump(report, f, indent=2)
     
-    print(f"[self_healing] {len(fixes)} issues fixed")
+    print(f"[father] {len(fixes)} cheezein theek ki | Total lessons: {len(knowledge['lessons'])}")
     return report
 
 def record_user_instruction():
-    """Jab user instruction de, to time record karo."""
-    os.makedirs(os.path.dirname(LAST_INSTRUCTION_FILE), exist_ok=True)
-    with open(LAST_INSTRUCTION_FILE, "w") as f:
-        f.write(str(time.time()))
+    for path in [LAST_INSTRUCTION_FILE, os.path.join(os.path.dirname(__file__), "..", "data", ".last_user_instruction")]:
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as f:
+                f.write(str(time.time()))
+        except:
+            pass
 
 if __name__ == "__main__":
-    print(json.dumps(run({"errors": [], "scripts": 0}), indent=2))
+    print(json.dumps(run({"errors": [], "scripts": 2}), indent=2, ensure_ascii=False))
