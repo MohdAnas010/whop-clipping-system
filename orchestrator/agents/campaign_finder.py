@@ -26,6 +26,7 @@ def search_web_for_campaigns():
     Production me ye live search karega.
     """
     # Research se mili best campaigns (2026 data)
+    # Sahi link: contentrewards.com/discover (Content Rewards marketplace)
     campaigns = [
         {
             "name": "MUTUUM",
@@ -34,7 +35,8 @@ def search_web_for_campaigns():
             "budget": "Limited pool",
             "platforms": ["TikTok", "Instagram Reels", "YouTube Shorts"],
             "niche": "Crypto/DeFi",
-            "whop_link": "https://whop.com/discover/",
+            "whop_link": "https://contentrewards.com/discover/",
+            "join_instructions": "contentrewards.com/discover par jao → Search me 'MUTUUM' likho → Join dabao",
             "requirements": "Original clips, no watermarks, must tag @mutuum",
             "status": "active",
         },
@@ -45,7 +47,8 @@ def search_web_for_campaigns():
             "budget": "$250k",
             "platforms": ["TikTok", "Instagram Reels", "YouTube Shorts", "X"],
             "niche": "Gaming/Casino",
-            "whop_link": "https://whop.com/discover/",
+            "whop_link": "https://contentrewards.com/discover/",
+            "join_instructions": "contentrewards.com/discover par jao → Search me 'Roobet' likho → Join dabao",
             "requirements": "Gaming content, 18+ audience, responsible gambling tags",
             "status": "active",
         },
@@ -56,7 +59,8 @@ def search_web_for_campaigns():
             "budget": "$10K+",
             "platforms": ["TikTok", "Instagram Reels", "YouTube Shorts"],
             "niche": "AI/Productivity",
-            "whop_link": "https://whop.com/discover/",
+            "whop_link": "https://contentrewards.com/discover/",
+            "join_instructions": "contentrewards.com/discover par jao → Search me 'Cluely' likho → Join dabao",
             "requirements": "AI demos, productivity hooks, #cluely hashtag",
             "status": "active",
         },
@@ -83,6 +87,7 @@ def format_for_doc(campaigns):
         lines.append(f"Platforms: {', '.join(c['platforms'])}")
         lines.append(f"Requirements: {c['requirements']}")
         lines.append(f"Whop Link: {c['whop_link']}")
+        lines.append(f"Kaise Join Karein: {c.get('join_instructions', '')}")
         lines.append(f"Status: {c['status']}")
         lines.append("")
         lines.append("[APPROVE] - Is campaign ko approve karne ke liye yahan click karo")
