@@ -1,71 +1,72 @@
-"""WhopOptimizer Agent - Whop profile ko professional banaye rakhta hai.
+"""WhopOptimizer Agent - Whop profile ke liye recommendations deta hai.
+
+IMPORTANT: Ye agent Whop account ko directly edit NAHI karta.
+- Whop ka public API profile editing support nahi karta
+- Profile changes browser se manually apply karne hote hain
+- Ye agent sirf taiyari aur recommendations deta hai
 
 Ye agent:
-1. Whop profile ko check karta hai
-2. Professional bio, links, branding improve karta hai
-3. Campaign requirements ko track karta hai
-4. Instagram ko Whop se connected rakhta hai
-5. Har cycle me profile ko aur behtar banata hai
+1. Profile ke liye professional recommendations banata hai
+2. Instagram readiness check karta hai (local config se)
+3. Har cycle me ek optimization report banata hai
 """
 import os
 import json
 from datetime import datetime
 
-def check_instagram_connection():
-    """Instagram Whop ke liye ready hai ya nahi."""
-    # Instagram CLI se check karte hain
-    # motion_i.q professional account hai
+def check_instagram_readiness():
+    """Instagram Whop ke liye ready hai ya nahi - local config se check."""
+    # Sirf local config check karte hain, Whop-side connection verify nahi kar sakte
+    # bina authenticated browser session ke
     return {
-        "connected": True,
         "username": "motion_i.q",
-        "is_professional": True,
-        "ready_for_whop": True,
+        "note": "Instagram CLI se professional account confirm hua tha, lekin Whop-side link verify nahi hua",
+        "whop_side_link_verified": False,
+        "action_needed": "Whop dashboard me Instagram connect karo (browser se)",
     }
 
 def get_profile_recommendations():
     """Whop profile ke liye recommendations."""
     return [
         {
+            "area": "display_name",
+            "recommended": "Motion Clips",
+            "priority": "high",
+            "apply_via": "browser",
+        },
+        {
             "area": "bio",
-            "current": "Check karo",
-            "recommended": "Professional clipper | Whop Content Rewards | Daily viral clips | Tier-1 audience",
+            "recommended": "Viral AI & productivity clips | Daily uploads | Tier-1 content",
             "priority": "high",
+            "apply_via": "browser",
         },
         {
-            "area": "links",
-            "current": "Check karo",
-            "recommended": "Instagram: @motion_i.q | Whop: Content Rewards active",
+            "area": "username",
+            "recommended": "motionclips (availability check karna hoga)",
             "priority": "high",
+            "apply_via": "browser",
         },
         {
-            "area": "branding",
-            "current": "Check karo",
-            "recommended": "Consistent username across platforms, professional profile pic",
-            "priority": "medium",
-        },
-        {
-            "area": "campaigns",
-            "current": "Cluely active",
-            "recommended": "Har approved campaign ko profile me showcase karo",
-            "priority": "medium",
+            "area": "instagram_link",
+            "recommended": "Instagram: @motion_i.q ko Whop profile se link karo",
+            "priority": "high",
+            "apply_via": "browser",
         },
     ]
 
 def run():
-    """Whop profile ko optimize karo."""
-    print("[whop_optimizer] Whop profile optimize kar rahe hain...")
+    """Whop profile optimization report banao."""
+    print("[whop_optimizer] Whop profile optimization report bana rahe hain...")
+    print("[whop_optimizer] NOTE: Ye agent Whop ko directly edit nahi karta. Changes browser se apply honge.")
     
-    # Instagram connection check
-    ig = check_instagram_connection()
-    print(f"[whop_optimizer] Instagram: @{ig['username']} | Professional: {ig['is_professional']} | Whop ready: {ig['ready_for_whop']}")
+    ig = check_instagram_readiness()
+    print(f"[whop_optimizer] Instagram: @{ig['username']} | Whop-side link verified: {ig['whop_side_link_verified']}")
     
-    # Recommendations
     recs = get_profile_recommendations()
-    print(f"[whop_optimizer] {len(recs)} recommendations mile")
+    print(f"[whop_optimizer] {len(recs)} recommendations taiyar")
     for r in recs:
-        print(f"  - {r['area']}: {r['priority']} priority")
+        print(f"  - {r['area']}: {r['priority']} priority (apply via: {r['apply_via']})")
     
-    # Save report
     out_dir = os.path.join(os.path.dirname(__file__), "..", "data")
     os.makedirs(out_dir, exist_ok=True)
     
@@ -73,13 +74,14 @@ def run():
         "checked_at": datetime.utcnow().isoformat(),
         "instagram": ig,
         "recommendations": recs,
-        "status": "profile_optimized",
+        "status": "recommendations_ready",
+        "honest_note": "Koi bhi change Whop par apply nahi hua. Ye sirf recommendations hain.",
     }
     
     with open(os.path.join(out_dir, "whop_optimization.json"), "w") as f:
         json.dump(report, f, indent=2)
     
-    print("[whop_optimizer] Profile optimization complete")
+    print("[whop_optimizer] Report taiyar. Koi profile change apply nahi hua.")
     return report
 
 if __name__ == "__main__":

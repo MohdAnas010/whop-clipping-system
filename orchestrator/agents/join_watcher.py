@@ -1,16 +1,20 @@
-"""JoinWatcher Agent - Whop par nazar rakhta hai ki tumne campaign join kiya ya nahi.
+"""JoinWatcher Agent - Whop par nazar rakhta hai ki campaign join hui ya nahi.
+
+IMPORTANT - Honest limitations:
+- Ye agent Whop API se memberships check karta hai
+- Agar WHOP_API_KEY invalid/expired hai, to ye kuch detect nahi kar sakta
+- API se 403/401 aaye to report me saaf likha jayega
+- Bina valid API key ke join detection kaam nahi karegi
 
 Ye agent:
-1. Har cycle me Whop API check karta hai
-2. Dekhta hai ki tumne koi nayi campaign join ki ya nahi
-3. Agar join ho gayi, to usko approved campaign bana deta hai
-4. Phir workflow automatically us par kaam shuru kar deta hai
-
-Tumhe kuch nahi bolna, bas Join dabana hai. Ye khud detect kar lega.
+1. Har cycle me Whop API check karta hai (agar key valid hai)
+2. Dekhta hai ki koi nayi campaign join hui ya nahi
+3. Agar join hui, to usko approved campaign bana deta hai
 """
 import os
 import json
 import urllib.request
+import urllib.error
 from datetime import datetime
 
 WHOP_API_KEY = os.environ.get("WHOP_API_KEY", "")
@@ -24,25 +28,27 @@ def _headers():
     }
 
 def get_joined_campaigns():
-    """Whop se joined campaigns/memberships lao."""
+    """Whop se joined campaigns/memberships lao. Returns (campaigns, status_info)."""
     if not WHOP_API_KEY:
-        print("[join_watcher] WHOP_API_KEY nahi hai")
-        return []
+        print("[join_watcher] WHOP_API_KEY nahi hai - detection possible nahi")
+        return [], {"api_available": False, "reason": "no_api_key"}
     
-    # Memberships check karo - joined campaigns yahan dikhengi
     url = f"{BASE}/api/v5/memberships?limit=20"
     req = urllib.request.Request(url, headers=_headers(), method="GET")
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        # Auth fail ho to saaf batao, chhupao mat
+        print(f"[join_watcher] API HTTP error {e.code}: key invalid ya expired ho sakti hai")
+        return [], {"api_available": False, "reason": f"http_{e.code}", "detail": "API key check karo"}
     except Exception as e:
         print(f"[join_watcher] API error: {e}")
-        return []
+        return [], {"api_available": False, "reason": "network_error", "detail": str(e)}
     
     items = data.get("data") or []
     campaigns = []
     for m in items:
-        # Content Rewards campaigns ko identify karo
         product = m.get("product") or {}
         campaigns.append({
             "offer_name": product.get("title") or m.get("product_id"),
@@ -50,7 +56,7 @@ def get_joined_campaigns():
             "joined_at": m.get("created_at"),
             "status": m.get("status"),
         })
-    return campaigns
+    return campaigns, {"api_available": True}
 
 def get_approved_campaign():
     """Current approved campaign lao."""
@@ -73,9 +79,21 @@ def save_approved_campaign(campaign):
 
 def run():
     """Join status check karo."""
-    print("[join_watcher] Whop par check kar rahe hain ki tumne join kiya ya nahi...")
+    print("[join_watcher] Whop par check kar rahe hain ki campaign join hui ya nahi...")
     
-    joined = get_joined_campaigns()
+    joined, status_info = get_joined_campaigns()
+    
+    if not status_info.get("api_available"):
+        print(f"[join_watcher] API available nahi: {status_info.get('reason')}")
+        print("[join_watcher] Join detection is cycle me possible nahi tha")
+        return {
+            "new_join": False,
+            "joined_count": 0,
+            "detection_working": False,
+            "reason": status_info.get("reason"),
+            "honest_note": "API key invalid hai, isliye join detect nahi ho saki. Key rotate karo.",
+        }
+    
     print(f"[join_watcher] {len(joined)} joined campaigns mile")
     
     approved = get_approved_campaign()
@@ -103,7 +121,7 @@ def run():
             return {"new_join": True, "campaign": new_approved}
     
     print("[join_watcher] Koi nayi join nahi mili")
-    return {"new_join": False, "joined_count": len(joined)}
+    return {"new_join": False, "joined_count": len(joined), "detection_working": True}
 
 if __name__ == "__main__":
     print(json.dumps(run(), indent=2, ensure_ascii=False))

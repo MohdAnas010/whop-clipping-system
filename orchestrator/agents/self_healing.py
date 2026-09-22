@@ -1,16 +1,17 @@
-"""Father Agent - Sab agents ko EARNING ki taraf le jana.
+"""Father Agent - Sab agents par nazar rakhta hai aur seekhta hai.
 
-Ye agent ka EK HI KAAM hai:
-Sab 16 agents ko earning ki taraf le jana.
+IMPORTANT - Honest scope:
+- Ye agent har cycle me agents ka performance track karta hai
+- Counters aur scores maintain karta hai
+- Lekin ye agents ke code ko automatically repair NAHI karta
+- "Fixes" ka matlab hai: issues ko identify karke report karna, code ko khud theek karna nahi
+- Earning potential hypothetical hai (scripts * payout), actual earnings nahi
 
-1. Har decision earning ke hisab se leta hai
-2. Jo agent earning badhata hai, usko badhava deta hai
-3. Jo agent earning ghatata hai, usko theek karta hai
-4. Har cycle me earning potential track karta hai
-5. Sabse zyada payout wali campaign ko priority deta hai
-6. Jitna time kaam karta hai, utna earning-smart hota jata hai
-
-Pita ka sapna: Sab bachche (agents) milkar paisa kamayein.
+Ye agent:
+1. Har agent ka success/fail track karta hai
+2. Weak agents ko identify karta hai
+3. Har cycle me ek report banata hai
+4. Earning potential ka estimate deta hai (hypothetical, guarantee nahi)
 """
 import os
 import json
@@ -153,32 +154,33 @@ def calculate_earning_focus(summary, knowledge):
     }
 
 def fix_with_wisdom(summary, knowledge):
-    """Gyaan ke saath fix karo."""
-    fixes = []
+    """Issues identify karo aur report karo.
+    
+    NOTE: Ye function issues ko IDENTIFY karta hai, code ko automatically REPAIR nahi karta.
+    "Fix" ka matlab yahan "identified issue + suggested action" hai.
+    """
+    issues = []
     smart = knowledge["smart_level"]
     
-    # Basic fixes (sabko pata hai)
     if "koi offer nahi mila" in str(summary.get("errors", [])):
-        fixes.append({"issue": "No offers", "fix": "Approved campaign use karo", "wisdom_used": smart})
+        issues.append({"issue": "No offers", "suggested_action": "Approved campaign use karo", "auto_repaired": False})
     
     if not summary.get("drive_requirements"):
-        fixes.append({"issue": "Drive empty", "fix": "Defaults use karo", "wisdom_used": smart})
+        issues.append({"issue": "Drive empty", "suggested_action": "Defaults use karo", "auto_repaired": False})
     
     if summary.get("scripts", 0) == 0:
-        fixes.append({"issue": "No scripts", "fix": "Fallback template", "wisdom_used": smart})
+        issues.append({"issue": "No scripts", "suggested_action": "Fallback template", "auto_repaired": False})
     
-    # Smart fixes (jitna smart, utne behtar fixes)
     if smart >= 3:
-        # Agent scores se seekho - kaunsa agent weak hai
         weak = [a for a, s in knowledge["agent_scores"].items() if s["fail"] > s["success"]]
         if weak:
-            fixes.append({
+            issues.append({
                 "issue": f"Weak agents: {', '.join(weak[:3])}",
-                "fix": "In par zyada nazar rakhunga agle cycle me",
-                "wisdom_used": smart,
+                "suggested_action": "In par zyada nazar rakhni hogi",
+                "auto_repaired": False,
             })
     
-    return fixes
+    return issues
 
 def run(summary=None):
     """Pita ka kaam - sabko EARNING ki taraf le jana."""
@@ -207,12 +209,12 @@ def run(summary=None):
     auto = should_auto_fix()
     print(f"[father] Auto-fix: {'ON' if auto else 'OFF'}")
     
-    fixes = []
+    issues = []
     if auto:
-        fixes = fix_with_wisdom(summary, knowledge)
-        knowledge["total_fixes"] += len(fixes)
-        for f in fixes:
-            print(f"[father] Sikhaya: {f['issue']} -> {f['fix']}")
+        issues = fix_with_wisdom(summary, knowledge)
+        knowledge["total_fixes"] += len(issues)
+        for i in issues:
+            print(f"[father] Issue identified: {i['issue']} -> suggested: {i['suggested_action']}")
     
     # Gyaan save karo - agli baar aur smart
     save_knowledge(knowledge)
@@ -227,15 +229,16 @@ def run(summary=None):
         "smart_level": knowledge["smart_level"],
         "wisdom": get_wisdom(knowledge),
         "auto_fix_enabled": auto,
-        "fixes_applied": fixes,
-        "total_fixes_ever": knowledge["total_fixes"],
+        "issues_identified": issues,
+        "total_issues_ever": knowledge["total_fixes"],
         "lessons_learned": len(knowledge["lessons"]),
+        "honest_note": "Issues identify kiye gaye, code auto-repair nahi hua. Earning potential hypothetical hai.",
     }
     
     with open(os.path.join(out_dir, "father_report.json"), "w") as f:
         json.dump(report, f, indent=2)
     
-    print(f"[father] {len(fixes)} cheezein theek ki | Total lessons: {len(knowledge['lessons'])}")
+    print(f"[father] {len(issues)} issues identified | Total lessons: {len(knowledge['lessons'])}")
     return report
 
 def record_user_instruction():

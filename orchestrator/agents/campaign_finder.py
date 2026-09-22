@@ -1,136 +1,110 @@
-"""CampaignFinder Agent - Poore internet par best Whop campaigns dhoondhta hai.
+"""CampaignFinder Agent - Whop Content Rewards campaigns ke liye research karta hai.
+
+IMPORTANT - Honest limitations:
+- Ye agent ke paas hardcoded PLACEHOLDER data hai, verified campaign details NAHI
+- Payout rates ($6/1K, $2/1K, etc.) UNVERIFIED hain - inko fact ki tarah mat lo
+- Campaign status, budgets, requirements sab UNVERIFIED hain
+- Asli campaign details sirf logged-in Whop/Content Rewards dashboard se milenge
+- Exact campaign URLs ke liye Whop login zaroori hai
 
 Ye agent:
-1. Google, Instagram, Facebook, poore web par search karta hai
-2. Best Whop Content Rewards campaigns nikalta hai (highest payout, active budget)
-3. Results ko Google Doc "AUTO CLIP AGENT" me likhta hai
-4. Har campaign ke liye alag section banata hai
-
-User bas Doc kholta hai, link par click karta hai, aur approve karta hai.
+1. Content Rewards discover page ka link deta hai
+2. Join karne ke instructions deta hai
+3. Campaign research ke liye ek template banata hai
+4. Sab kuch "unverified" label ke saath mark karta hai
 """
 import os
 import json
-import urllib.request
-import urllib.parse
 from datetime import datetime
 
 # Google Doc ID (AUTO CLIP AGENT - Campaigns)
 DOC_ID = "1FSRXhGKNwfgXOvFyolqHH9MB8vbNMJHjL9iXqaozkGI"
 FOLDER_ID = "14m6b_L9t_BtAr1NrlcySvzEkuPuw8bVT"
 
-def search_web_for_campaigns():
-    """Web par best Whop campaigns search karo.
-    
-    NOTE: Ye function web search API use karega. Abhi ke liye
-    hum curated list dete hain jo research se mili hai.
-    Production me ye live search karega.
-    """
-    # Research se mili best campaigns (2026 data)
-    # Sahi link: contentrewards.com/discover (Content Rewards marketplace)
-    campaigns = [
-        {
-            "name": "MUTUUM",
-            "payout": "$6 per 1,000 views",
-            "payout_value": 6.0,
-            "budget": "Limited pool",
-            "platforms": ["TikTok", "Instagram Reels", "YouTube Shorts"],
-            "niche": "Crypto/DeFi",
-            "whop_link": "https://contentrewards.com/discover/",
-            "join_instructions": "contentrewards.com/discover par jao → Search me 'MUTUUM' likho → Join dabao",
-            "requirements": "Original clips, no watermarks, must tag @mutuum",
-            "status": "active",
-        },
-        {
-            "name": "Roobet",
-            "payout": "$1.50 per 1,000 views",
-            "payout_value": 1.5,
-            "budget": "$250k",
-            "platforms": ["TikTok", "Instagram Reels", "YouTube Shorts", "X"],
-            "niche": "Gaming/Casino",
-            "whop_link": "https://contentrewards.com/discover/",
-            "join_instructions": "contentrewards.com/discover par jao → Search me 'Roobet' likho → Join dabao",
-            "requirements": "Gaming content, 18+ audience, responsible gambling tags",
-            "status": "active",
-        },
-        {
-            "name": "Cluely",
-            "payout": "$2 per 1,000 views",
-            "payout_value": 2.0,
-            "budget": "$10K+",
-            "platforms": ["TikTok", "Instagram Reels", "YouTube Shorts"],
-            "niche": "AI/Productivity",
-            "whop_link": "https://contentrewards.com/discover/",
-            "join_instructions": "contentrewards.com/discover par jao → Search me 'Cluely' likho → Join dabao",
-            "requirements": "AI demos, productivity hooks, #cluely hashtag",
-            "status": "active",
-        },
-    ]
-    # Highest payout pehle
-    campaigns.sort(key=lambda c: c["payout_value"], reverse=True)
-    return campaigns
+# Content Rewards discover page - yahan se asli campaigns milenge
+DISCOVER_URL = "https://contentrewards.com/discover/"
 
-def format_for_doc(campaigns):
-    """Campaigns ko Google Doc format me banao."""
+def get_campaign_research_template():
+    """Campaign research ke liye template.
+    
+    NOTE: Neeche diye gaye campaign names sirf research ke liye hain.
+    Inke payout, budget, status UNVERIFIED hain.
+    """
+    return {
+        "discover_url": DISCOVER_URL,
+        "how_to_find": [
+            "1. contentrewards.com/discover/ kholo (Whop login zaroori)",
+            "2. Search me campaign ka naam likho",
+            "3. Campaign page par payout, budget, requirements check karo",
+            "4. Join button dabao",
+        ],
+        "campaigns_to_research": [
+            {"name": "MUTUUM", "niche": "Crypto/DeFi", "status": "UNVERIFIED - dashboard se check karo"},
+            {"name": "Roobet", "niche": "Gaming", "status": "UNVERIFIED - dashboard se check karo"},
+            {"name": "Cluely", "niche": "AI/Productivity", "status": "UNVERIFIED - dashboard se check karo"},
+        ],
+        "honest_note": (
+            "In campaigns ke payout rates, budgets, aur requirements VERIFY NAHI hue hain. "
+            "Koi bhi number fact ki tarah mat lo. "
+            "Asli details sirf logged-in Content Rewards dashboard se milengi."
+        ),
+    }
+
+def format_for_doc(template):
+    """Research template ko Google Doc format me banao."""
     lines = []
-    lines.append("AUTO CLIP AGENT - Best Whop Campaigns")
+    lines.append("AUTO CLIP AGENT - Campaign Research")
     lines.append(f"Last updated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+    lines.append("")
+    lines.append("⚠️  IMPORTANT: Neeche di gayi saari campaign details UNVERIFIED hain.")
+    lines.append("Asli payout, budget, requirements ke liye Whop dashboard check karo.")
     lines.append("")
     lines.append("=" * 50)
     lines.append("")
-    
-    for i, c in enumerate(campaigns, 1):
-        lines.append(f"CAMPAIGN #{i}: {c['name']}")
-        lines.append("-" * 30)
-        lines.append(f"Payout: {c['payout']}")
-        lines.append(f"Budget: {c['budget']}")
-        lines.append(f"Niche: {c['niche']}")
-        lines.append(f"Platforms: {', '.join(c['platforms'])}")
-        lines.append(f"Requirements: {c['requirements']}")
-        lines.append(f"Whop Link: {c['whop_link']}")
-        lines.append(f"Kaise Join Karein: {c.get('join_instructions', '')}")
-        lines.append(f"Status: {c['status']}")
-        lines.append("")
-        lines.append("[APPROVE] - Is campaign ko approve karne ke liye yahan click karo")
-        lines.append("")
-        lines.append("=" * 50)
-        lines.append("")
-    
+    lines.append(f"Content Rewards Discover: {template['discover_url']}")
+    lines.append("")
+    lines.append("Kaise dhoondo:")
+    for step in template["how_to_find"]:
+        lines.append(f"  {step}")
+    lines.append("")
+    lines.append("Research karne wali campaigns:")
+    for c in template["campaigns_to_research"]:
+        lines.append(f"  - {c['name']} ({c['niche']}): {c['status']}")
+    lines.append("")
+    lines.append(template["honest_note"])
+    lines.append("")
     return "\n".join(lines)
 
-def save_local(campaigns, doc_text):
+def save_local(template, doc_text):
     """Local backup save karo."""
     out_dir = os.path.join(os.path.dirname(__file__), "..", "data")
     os.makedirs(out_dir, exist_ok=True)
     
-    # JSON
-    with open(os.path.join(out_dir, "best_campaigns.json"), "w") as f:
-        json.dump(campaigns, f, indent=2)
+    with open(os.path.join(out_dir, "campaign_research.json"), "w") as f:
+        json.dump(template, f, indent=2)
     
-    # Text (Doc me copy karne ke liye)
     with open(os.path.join(out_dir, "auto_clip_agent_doc.txt"), "w") as f:
         f.write(doc_text)
     
     print(f"[campaign_finder] Local files saved")
 
 def run():
-    """Best campaigns dhoondho aur Doc ke liye taiyar karo."""
-    print("[campaign_finder] Poore internet par best Whop campaigns dhoondh rahe hain...")
+    """Campaign research template banao."""
+    print("[campaign_finder] Campaign research template bana rahe hain...")
+    print("[campaign_finder] NOTE: Saari campaign details UNVERIFIED hain.")
     
-    campaigns = search_web_for_campaigns()
-    print(f"[campaign_finder] {len(campaigns)} best campaigns mile")
+    template = get_campaign_research_template()
+    print(f"[campaign_finder] {len(template['campaigns_to_research'])} campaigns research ke liye")
+    print(f"[campaign_finder] Discover URL: {template['discover_url']}")
     
-    for c in campaigns:
-        print(f"  - {c['name']}: {c['payout']} | Budget: {c['budget']}")
-    
-    doc_text = format_for_doc(campaigns)
-    save_local(campaigns, doc_text)
+    doc_text = format_for_doc(template)
+    save_local(template, doc_text)
     
     print(f"[campaign_finder] Google Doc ID: {DOC_ID}")
-    print("[campaign_finder] NOTE: Google Docs connect hone ke baad Doc me likha jayega")
     print("[campaign_finder] Doc link: https://docs.google.com/document/d/1FSRXhGKNwfgXOvFyolqHH9MB8vbNMJHjL9iXqaozkGI/edit")
     
-    return campaigns
+    return template
 
 if __name__ == "__main__":
     result = run()
-    print(f"\n{len(result)} campaigns taiyar hain")
+    print(f"\nResearch template taiyar hai")

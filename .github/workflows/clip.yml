@@ -53,10 +53,16 @@ jobs:
           cd orchestrator
           python main.py
 
-      - name: Output dirs banao (artifacts ke liye)
+      - name: Cycle report banao (artifacts kabhi khali nahi honge)
         run: |
           mkdir -p orchestrator/out orchestrator/data
-          # Khali ho to bhi upload hoga, warning nahi aayegi
+          cat > orchestrator/out/cycle_report.txt << EOF
+          Cycle: ${{ github.run_number }}
+          Run ID: ${{ github.run_id }}
+          Time (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          Status: completed
+          EOF
+          echo "Cycle report banaya"
 
       - name: Output artifacts upload karo
         uses: actions/upload-artifact@v4
@@ -67,7 +73,7 @@ jobs:
             orchestrator/out/
             orchestrator/data/
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Keepalive (60-day auto-disable se bachne ke liye)
         run: |
