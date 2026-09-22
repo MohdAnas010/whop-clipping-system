@@ -1,12 +1,16 @@
-"""Father Agent (SelfHealing) - Sab agents ka pita, un par nazar rakhta hai.
+"""Father Agent - Sab agents ko EARNING ki taraf le jana.
 
-Ye agent:
-1. Sab 15 agents par nazar rakhta hai
-2. Unse seekhta hai - successes aur mistakes dono se
-3. Jitna time kaam karta hai, utna smart hota jata hai
-4. Knowledge base banata hai jo har cycle me badhta hai
-5. Agents ko guide karta hai, jaise pita bachchon ko
-6. 30 min tak instruction na aaye to khud action leta hai
+Ye agent ka EK HI KAAM hai:
+Sab 16 agents ko earning ki taraf le jana.
+
+1. Har decision earning ke hisab se leta hai
+2. Jo agent earning badhata hai, usko badhava deta hai
+3. Jo agent earning ghatata hai, usko theek karta hai
+4. Har cycle me earning potential track karta hai
+5. Sabse zyada payout wali campaign ko priority deta hai
+6. Jitna time kaam karta hai, utna earning-smart hota jata hai
+
+Pita ka sapna: Sab bachche (agents) milkar paisa kamayein.
 """
 import os
 import json
@@ -107,16 +111,46 @@ def observe_agents(summary, knowledge):
     return observations
 
 def get_wisdom(knowledge):
-    """Pita ka gyaan - jitne cycles, utni wisdom."""
+    """Pita ka gyaan - EARNING par focus."""
     cycles = knowledge["cycles_completed"]
+    total_earning_potential = knowledge.get("total_earning_potential", 0)
     if cycles < 5:
-        return "Naya hun, seekh raha hun. Har galti mujhe smart banati hai."
+        return f"Naya hun. Mission: Sabko earning ki taraf le jana. Potential: ${total_earning_potential:.2f}"
     elif cycles < 20:
-        return f"{cycles} cycles ka anubhav hai. Patterns samajh aa rahe hain."
+        return f"{cycles} cycles ka anubhav. Har decision earning ke liye. Potential: ${total_earning_potential:.2f}"
     elif cycles < 50:
-        return f"{cycles} cycles! Ab main pehle se predict kar sakta hun ki kahan problem aayegi."
+        return f"{cycles} cycles! Earning patterns samajh aa gaye. Potential: ${total_earning_potential:.2f}"
     else:
-        return f"{cycles} cycles ka gyaani hun. Sab agents mere bachche hain, main unhe behtar banata hun."
+        return f"{cycles} cycles ka gyaani. Sab agents earning machine hain. Potential: ${total_earning_potential:.2f}"
+
+def calculate_earning_focus(summary, knowledge):
+    """Earning par focus karo - sabse important metric."""
+    payout = 0
+    try:
+        _path = os.path.join(os.path.dirname(__file__), "..", "data", "approved_campaign.json")
+        if os.path.exists(_path):
+            with open(_path) as _f:
+                _camp = json.load(_f)
+                _payout_str = _camp.get("commission", "") or _camp.get("payout", "")
+                import re as _re
+                _m = _re.search(r'\$([\d.]+)', str(_payout_str))
+                if _m:
+                    payout = float(_m.group(1))
+    except:
+        pass
+    
+    scripts = summary.get("scripts", 0)
+    # Har script se potential earning (conservative: 1000 views avg)
+    earning_potential = scripts * payout if payout else 0
+    
+    knowledge["total_earning_potential"] = knowledge.get("total_earning_potential", 0) + earning_potential
+    
+    return {
+        "campaign_payout_per_1k": payout,
+        "scripts_made": scripts,
+        "cycle_earning_potential": earning_potential,
+        "total_earning_potential": knowledge["total_earning_potential"],
+    }
 
 def fix_with_wisdom(summary, knowledge):
     """Gyaan ke saath fix karo."""
@@ -147,8 +181,8 @@ def fix_with_wisdom(summary, knowledge):
     return fixes
 
 def run(summary=None):
-    """Pita ka kaam - sab par nazar, sabse seekho."""
-    print("[father] Sab bachchon (agents) par nazar rakh raha hun...")
+    """Pita ka kaam - sabko EARNING ki taraf le jana."""
+    print("[father] Mission: Sab agents ko EARNING ki taraf le jana...")
     
     if summary is None:
         summary = {}
@@ -157,13 +191,16 @@ def run(summary=None):
     knowledge = load_knowledge()
     knowledge["cycles_completed"] += 1
     
-    # Smart level badhao - jitne cycles, utna smart
+    # Smart level badhao - jitne cycles, utna earning-smart
     knowledge["smart_level"] = 1 + (knowledge["cycles_completed"] // 10)
     
+    # EARNING FOCUS - sabse important
+    earning = calculate_earning_focus(summary, knowledge)
     print(f"[father] Cycle #{knowledge['cycles_completed']} | Smart Level: {knowledge['smart_level']}")
+    print(f"[father] Earning Potential: ${earning['cycle_earning_potential']:.2f} (Total: ${earning['total_earning_potential']:.2f})")
     print(f"[father] Wisdom: {get_wisdom(knowledge)}")
     
-    # Sab agents ko observe karo
+    # Sab agents ko observe karo - earning ke lens se
     observe_agents(summary, knowledge)
     
     # 30 min check
