@@ -7,6 +7,7 @@
 | Agent | Role |
 |-------|------|
 | **Scout** | Finds top Whop affiliate offers via API (highest payout first) |
+| **CampaignFinder** | Searches full internet for best Whop campaigns, writes to Google Doc |
 | **DriveReader** | Reads Google Drive campaign brief, extracts requirements |
 | **Scribe** | Writes viral scripts with Ollama (Qwen/Llama, free) |
 | **Stealth** | Humanizes content to avoid AI detection |
@@ -15,6 +16,7 @@
 | **Dispatcher** | Publishes to Instagram Reels (YouTube later) |
 | **Approver** | Submits to Whop for campaign approval after upload |
 | **Warmer** | Warms up account with Tier 1 engagement |
+| **WhopOptimizer** | Keeps Whop profile professional, checks Instagram-Whop connection |
 | **Competitor** | Analyzes competitors + best posting times |
 | **Meta** | Self-improves the system every cycle |
 | **Innovator** | Scouts GitHub/Hugging Face for upgrades |
@@ -68,12 +70,14 @@ docker compose run --rm -e RUN_ONCE=1 app
 ## How It Works
 
 ```
-Warmer → Scout → DriveReader → Scribe → Stealth → Editor → Uploader → Dispatcher → Approver
+Warmer → WhopOptimizer → Scout → DriveReader → Scribe → Stealth → Editor → Uploader → Dispatcher → Approver
                                                                               ↓
-              Competitor → Meta → Innovator (daily)
+              CampaignFinder (daily) → Competitor → Meta → Innovator (daily)
 ```
 
-Every cycle (6h): warmup → find highest-payout campaign → read Drive brief → write scripts → humanize → render → prepare upload per Drive requirements → post → submit to Whop for approval → analyze → improve.
+Every cycle (6h): warmup → optimize Whop profile → find highest-payout campaign → read Drive brief → write scripts → humanize → render → prepare upload per Drive requirements → post → submit to Whop for approval → analyze → improve.
+
+Daily: CampaignFinder searches internet for best campaigns → writes to Google Doc "AUTO CLIP AGENT" → user approves → system uses approved campaign.
 
 ## License
 

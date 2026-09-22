@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 
 from agents import scout, scribe, editor, dispatcher, meta, competitor, warmer, stealth, innovator
-from agents import drive_reader, uploader, approver, campaign_finder
+from agents import drive_reader, uploader, approver, campaign_finder, whop_optimizer
 
 RUN_EVERY_HOURS = int(os.environ.get("RUN_EVERY_HOURS", "6"))
 
@@ -22,6 +22,13 @@ def one_cycle():
     try:
         # Warmer pehle - Tier 1 warmup (account ko Tier 1 audience ke liye ready karta hai)
         warmer.run()
+
+        # WhopOptimizer: Profile ko professional banaye rakho, Instagram-Whop connection check karo
+        try:
+            opt_report = whop_optimizer.run()
+            summary["whop_optimized"] = True
+        except Exception as e:
+            summary["errors"].append(f"whop_optimizer failed: {e}")
 
         # Pehle approved campaign check karo (Google Doc se user ne approve kiya ho)
         top_campaign = None
