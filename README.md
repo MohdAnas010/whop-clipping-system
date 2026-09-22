@@ -18,6 +18,7 @@
 | **Warmer** | Warms up account with Tier 1 engagement |
 | **WhopOptimizer** | Keeps Whop profile professional, checks Instagram-Whop connection |
 | **JoinWatcher** | Watches Whop for new joins, auto-starts work when you join (no need to tell) |
+| **ProfileBuilder** | Builds professional Whop profile (bio, name, theme) - user ko kuch nahi karna |
 | **SelfHealing (Father)** | EK HI KAAM: Sab agents ko EARNING ki taraf le jana. Har decision earning ke liye |
 | **Competitor** | Analyzes competitors + best posting times |
 | **Meta** | Self-improves the system every cycle |

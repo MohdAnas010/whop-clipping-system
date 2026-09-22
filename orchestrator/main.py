@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 
 from agents import scout, scribe, editor, dispatcher, meta, competitor, warmer, stealth, innovator
-from agents import drive_reader, uploader, approver, campaign_finder, whop_optimizer, self_healing, join_watcher
+from agents import drive_reader, uploader, approver, campaign_finder, whop_optimizer, self_healing, join_watcher, profile_builder
 
 RUN_EVERY_HOURS = int(os.environ.get("RUN_EVERY_HOURS", "6"))
 
@@ -29,6 +29,14 @@ def one_cycle():
             summary["whop_optimized"] = True
         except Exception as e:
             summary["errors"].append(f"whop_optimizer failed: {e}")
+
+        # ProfileBuilder: Whop profile banao (user ko kuch nahi karna)
+        try:
+            profile_result = profile_builder.run()
+            summary["profile_built"] = True
+            summary["profile_name"] = profile_result["profile"]["display_name"]
+        except Exception as e:
+            summary["errors"].append(f"profile_builder failed: {e}")
 
         # JoinWatcher: Dekho tumne Whop par koi nayi campaign join ki ya nahi
         # Tumhe kuch nahi bolna, bas Join dabana hai - ye khud detect kar lega
