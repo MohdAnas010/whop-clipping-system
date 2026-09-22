@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 
 from agents import scout, scribe, editor, dispatcher, meta, competitor, warmer, stealth, innovator
-from agents import drive_reader, uploader, approver, campaign_finder, whop_optimizer, self_healing
+from agents import drive_reader, uploader, approver, campaign_finder, whop_optimizer, self_healing, join_watcher
 
 RUN_EVERY_HOURS = int(os.environ.get("RUN_EVERY_HOURS", "6"))
 
@@ -29,6 +29,16 @@ def one_cycle():
             summary["whop_optimized"] = True
         except Exception as e:
             summary["errors"].append(f"whop_optimizer failed: {e}")
+
+        # JoinWatcher: Dekho tumne Whop par koi nayi campaign join ki ya nahi
+        # Tumhe kuch nahi bolna, bas Join dabana hai - ye khud detect kar lega
+        try:
+            join_result = join_watcher.run()
+            summary["join_watcher"] = join_result
+            if join_result.get("new_join"):
+                print(f"[orchestrator] Nayi join mili: {join_result['campaign'].get('offer_name')}")
+        except Exception as e:
+            summary["errors"].append(f"join_watcher failed: {e}")
 
         # Pehle approved campaign check karo (Google Doc se user ne approve kiya ho)
         top_campaign = None

@@ -17,6 +17,7 @@
 | **Approver** | Submits to Whop for campaign approval after upload |
 | **Warmer** | Warms up account with Tier 1 engagement |
 | **WhopOptimizer** | Keeps Whop profile professional, checks Instagram-Whop connection |
+| **JoinWatcher** | Watches Whop for new joins, auto-starts work when you join (no need to tell) |
 | **SelfHealing (Father)** | Sab agents par nazar, unse seekhta hai, har cycle me aur smart hota hai |
 | **Competitor** | Analyzes competitors + best posting times |
 | **Meta** | Self-improves the system every cycle |
@@ -71,14 +72,14 @@ docker compose run --rm -e RUN_ONCE=1 app
 ## How It Works
 
 ```
-Warmer → WhopOptimizer → Scout → DriveReader → Scribe → Stealth → Editor → Uploader → Dispatcher → Approver
+Warmer → WhopOptimizer → JoinWatcher → Scout → DriveReader → Scribe → Stealth → Editor → Uploader → Dispatcher → Approver
                                                                               ↓
-              CampaignFinder (daily) → Competitor → Meta → Innovator (daily)
+              CampaignFinder (daily) → Competitor → Meta → Innovator (daily) → SelfHealing (Father)
 ```
 
-Every cycle (6h): warmup → optimize Whop profile → find highest-payout campaign → read Drive brief → write scripts → humanize → render → prepare upload per Drive requirements → post → submit to Whop for approval → analyze → improve.
+Every cycle (6h): warmup → optimize profile → check for new joins → find campaign → read Drive brief → write scripts → humanize → render → prepare upload → post → submit for approval → analyze → improve → father learns.
 
-Daily: CampaignFinder searches internet for best campaigns → writes to Google Doc "AUTO CLIP AGENT" → user approves → system uses approved campaign.
+JoinWatcher: Tum bas Whop par Join dabao, kuch bolne ki zaroorat nahi. Ye khud detect karke kaam shuru kar dega.
 
 ## License
 
