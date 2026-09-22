@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# Output & data (user-specific, not in repo)
+out/
+data/
+*.mp4
+
+# Env & secrets - NEVER commit
+.env
+.env.local
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Docker volumes
+ollama-data/

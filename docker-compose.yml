@@ -1,0 +1,36 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: whop-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    # USA region VPS par chalao taaki Whop/Instagram/YouTube USA IP se access ho
+
+  app:
+    build: .
+    container_name: whop-clipping-agent
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:7b
+      - WHOP_API_KEY=${WHOP_API_KEY}
+      - RUN_EVERY_HOURS=6
+      - HUMAN_APPROVAL=false
+    volumes:
+      - ./out:/app/out
+      - ./data:/app/data
+      - ./agents/editor:/app/agents/editor
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Ollama model pull kar rahe hain...' &&
+        curl -s -X POST http://ollama:11434/api/pull -d '{\"name\": \"${OLLAMA_MODEL:-qwen2.5:7b}\"}' > /dev/null 2>&1 || true &&
+        python -u orchestrator/main.py
+      "
+
+volumes:
+  ollama-data:
