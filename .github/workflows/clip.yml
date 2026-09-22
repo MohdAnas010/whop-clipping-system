@@ -1,0 +1,69 @@
+name: Whop Clipping 24/7
+
+on:
+  schedule:
+    # Har 6 ghante (UTC) - 00:00, 06:00, 12:00, 18:00
+    - cron: '0 */6 * * *'
+  workflow_dispatch:  # manual trigger ke liye
+
+jobs:
+  clip-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Code checkout karo
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Dependencies install karo
+        run: |
+          pip install -r orchestrator/requirements.txt
+
+      - name: Ollama setup (optional - fallback hai)
+        uses: actions/cache@v4
+        id: ollama-cache
+        with:
+          path: ~/.ollama
+          key: ollama-qwen25-7b-v1
+
+      - name: Ollama install aur model pull
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 10
+          # Cache hit nahi hua to model pull karo (pehli baar slow hoga)
+          ollama pull qwen2.5:7b || echo "Model pull fail, fallback use hoga"
+        continue-on-error: true
+
+      - name: Clipping cycle chalao
+        env:
+          RUN_ONCE: '1'
+          OLLAMA_HOST: 'http://localhost:11434'
+          OLLAMA_MODEL: 'qwen2.5:7b'
+          WHOP_API_KEY: ${{ secrets.WHOP_API_KEY }}
+          RUN_EVERY_HOURS: '6'
+          ENABLE_YOUTUBE: 'false'
+        run: |
+          cd orchestrator
+          python main.py
+
+      - name: Output artifacts upload karo
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cycle-output-${{ github.run_number }}
+          path: |
+            orchestrator/out/
+            orchestrator/data/
+          retention-days: 30
+
+      - name: Keepalive (60-day auto-disable se bachne ke liye)
+        run: |
+          # Ye workflow khud hi har 6h chalta hai, isliye active rehta hai
+          echo "Cycle complete: ${{ github.run_number }}"
