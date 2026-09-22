@@ -25,3 +25,7 @@ Thumbs.db
 
 # Docker volumes
 ollama-data/
+
+credentials.json
+*secret*
+.last_user_instruction

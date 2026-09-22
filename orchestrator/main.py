@@ -11,6 +11,7 @@ from datetime import datetime
 
 from agents import scout, scribe, editor, dispatcher, meta, competitor, warmer, stealth, innovator
 from agents import drive_reader, uploader, approver, campaign_finder, whop_optimizer, self_healing, join_watcher, profile_builder
+from agents import guardian
 
 RUN_EVERY_HOURS = int(os.environ.get("RUN_EVERY_HOURS", "6"))
 
@@ -20,6 +21,17 @@ def one_cycle():
     summary = {"started": ts, "offers": 0, "scripts": 0, "rendered": 0, "dispatched": 0, "errors": []}
 
     try:
+        # Guardian SABSE PEHLE - security check, leak mile to cycle roko
+        try:
+            guardian_report = guardian.run()
+            summary["guardian_status"] = guardian_report["status"]
+            if guardian_report["status"] == "DANGER":
+                print("[orchestrator] 🛑 GUARDIAN ne CRITICAL leak pakda! Cycle rok rahe hain.")
+                summary["errors"].append("guardian_blocked: critical secret leak detected")
+                return summary
+        except Exception as e:
+            summary["errors"].append(f"guardian failed: {e}")
+
         # Warmer pehle - Tier 1 warmup (account ko Tier 1 audience ke liye ready karta hai)
         warmer.run()
 
