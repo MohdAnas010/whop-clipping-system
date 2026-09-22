@@ -1,6 +1,6 @@
 """Main Orchestrator - Sab agents ko chalata hai, loop me.
 
-Flow: Scout -> Scribe -> Editor -> Dispatcher -> Meta (improver)
+Flow: Scout -> DriveReader -> Scribe -> Stealth -> Editor -> Uploader -> Dispatcher -> Approver -> Meta
 Har RUN_EVERY_HOURS me ek cycle. 100% free stack.
 """
 import os
@@ -9,6 +9,7 @@ import traceback
 from datetime import datetime
 
 from agents import scout, scribe, editor, dispatcher, meta, competitor, warmer, stealth, innovator
+from agents import drive_reader, uploader, approver
 
 RUN_EVERY_HOURS = int(os.environ.get("RUN_EVERY_HOURS", "6"))
 
@@ -27,6 +28,14 @@ def one_cycle():
             summary["errors"].append("koi offer nahi mila")
             return summary
 
+        # Sabse zyada payout wala campaign lo (Scout already sort karke deta hai)
+        top_campaign = offers[0]
+        print(f"[orchestrator] Top campaign: {top_campaign.get('offer_name')} | {top_campaign.get('commission')}")
+
+        # DriveReader: Campaign ka Google Drive brief padho
+        drive_data = drive_reader.run(top_campaign)
+        summary["drive_requirements"] = drive_data.get("requirements", {})
+
         scripts = scribe.run(offers)
         summary["scripts"] = len(scripts)
 
@@ -36,8 +45,16 @@ def one_cycle():
         rendered = editor.run(scripts)
         summary["rendered"] = len(rendered)
 
+        # Uploader: Campaign requirements ke hisab se upload packages banao
+        upload_packages = uploader.run(rendered, scripts, drive_data, top_campaign)
+        summary["upload_packages"] = len(upload_packages)
+
         dispatched = dispatcher.run(rendered)
         summary["dispatched"] = len(dispatched)
+
+        # Approver: Whop par approval ke liye submit karo
+        submissions = approver.run(upload_packages, top_campaign, dispatched)
+        summary["submissions"] = len(submissions)
 
     except Exception as e:
         summary["errors"].append(str(e))

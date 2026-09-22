@@ -6,11 +6,14 @@
 
 | Agent | Role |
 |-------|------|
-| **Scout** | Finds top Whop affiliate offers via API |
+| **Scout** | Finds top Whop affiliate offers via API (highest payout first) |
+| **DriveReader** | Reads Google Drive campaign brief, extracts requirements |
 | **Scribe** | Writes viral scripts with Ollama (Qwen/Llama, free) |
 | **Stealth** | Humanizes content to avoid AI detection |
 | **Editor** | Renders 9:16 videos with Remotion (free) |
+| **Uploader** | Prepares upload packages per campaign Drive requirements |
 | **Dispatcher** | Publishes to Instagram Reels (YouTube later) |
+| **Approver** | Submits to Whop for campaign approval after upload |
 | **Warmer** | Warms up account with Tier 1 engagement |
 | **Competitor** | Analyzes competitors + best posting times |
 | **Meta** | Self-improves the system every cycle |
@@ -65,12 +68,12 @@ docker compose run --rm -e RUN_ONCE=1 app
 ## How It Works
 
 ```
-Warmer → Scout → Scribe → Stealth → Editor → Dispatcher
-                                              ↓
+Warmer → Scout → DriveReader → Scribe → Stealth → Editor → Uploader → Dispatcher → Approver
+                                                                              ↓
               Competitor → Meta → Innovator (daily)
 ```
 
-Every cycle (6h): warmup → find offers → write scripts → humanize → render → post → analyze → improve.
+Every cycle (6h): warmup → find highest-payout campaign → read Drive brief → write scripts → humanize → render → prepare upload per Drive requirements → post → submit to Whop for approval → analyze → improve.
 
 ## License
 
