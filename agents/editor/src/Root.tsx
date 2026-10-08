@@ -1,10 +1,14 @@
 import React from 'react';
 import {Composition} from 'remotion';
 import {ClipComposition, ClipProps} from './ClipComposition';
+import {SourceClip} from './SourceClip';
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition id="SourceClip" component={SourceClip} fps={30} width={1080} height={1920}
+        durationInFrames={150} defaultProps={{source: '', start: 0, duration: 5, subtitles: []}}
+        calculateMetadata={({props}) => ({durationInFrames: Math.max(1, Math.round(props.duration * 30))})} />
       <Composition
         id="ClipComposition"
         component={ClipComposition}

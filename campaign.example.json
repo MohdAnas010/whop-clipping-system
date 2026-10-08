@@ -4,8 +4,28 @@
   "approved_by": "",
   "campaign_url": "https://whop.com/REPLACE_WITH_CAMPAIGN/",
   "source_authorized": false,
-  "allowed_platforms": ["instagram"],
+  "allowed_platforms": [
+    "instagram"
+  ],
   "source_video": "/path/to/campaign-source.mp4",
-  "requirements": {"notes": "Paste the actual brief, hashtags, disclosures and eligibility rules here"},
-  "clips": [{"start": 0, "duration": 30, "caption": "", "transcript": ""}]
+  "requirements": {
+    "notes": "Paste the actual brief, hashtags, disclosures and eligibility rules here"
+  },
+  "clips": [
+    {
+      "start": 0,
+      "duration": 30,
+      "caption": "",
+      "transcript": "",
+      "hook": "",
+      "fit": "contain",
+      "subtitles": [
+        {
+          "start": 0,
+          "end": 2,
+          "text": "Replace with actual spoken words"
+        }
+      ]
+    }
+  ]
 }
