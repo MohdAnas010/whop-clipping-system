@@ -1,0 +1,11 @@
+{
+  "type": "content_rewards",
+  "status": "draft",
+  "approved_by": "",
+  "campaign_url": "https://whop.com/REPLACE_WITH_CAMPAIGN/",
+  "source_authorized": false,
+  "allowed_platforms": ["instagram"],
+  "source_video": "/path/to/campaign-source.mp4",
+  "requirements": {"notes": "Paste the actual brief, hashtags, disclosures and eligibility rules here"},
+  "clips": [{"start": 0, "duration": 30, "caption": "", "transcript": ""}]
+}

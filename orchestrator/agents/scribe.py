@@ -30,6 +30,12 @@ Headline: {offer.get('headline')}
 
 Pick the best viral angle for a Tier 1 (USA) audience and create the JSON script (case-study, mistake-fix, or blueprint angle). ENGLISH ONLY."""
     try:
+        if os.getenv("LLM_PROVIDER", "gemini") == "gemini":
+            from .llm import generate_json
+            data = generate_json(SYSTEM_PROMPT, prompt)
+            if not isinstance(data.get("hook"), str) or not isinstance(data.get("scriptLines"), list):
+                raise ValueError("Incomplete script")
+            return data
         r = requests.post(
             f"{OLLAMA_HOST}/api/generate",
             json={
@@ -56,17 +62,7 @@ Pick the best viral angle for a Tier 1 (USA) audience and create the JSON script
         data.setdefault("accentColor", "#00ff88")
         return data
     except Exception as e:
-        print(f"[scribe] LLM error: {e}, fallback template use kar rahe hain")
-        return {
-            "hook": f"Make money with {offer.get('offer_name')}",
-            "scriptLines": [
-                f"This is {offer.get('offer_name')}",
-                f"Earn up to {offer.get('commission')} commission",
-                "Link in bio, check it out now",
-            ],
-            "caption": f"{offer.get('offer_name')} #whop #affiliate #makemoneyonline #sidehustle",
-            "accentColor": "#00ff88",
-        }
+        raise RuntimeError("Script generation failed; no fabricated fallback") from None
 
 def run(offers):
     print(f"[scribe] {len(offers)} offers ke liye scripts bana rahe hain...")

@@ -171,6 +171,12 @@ def one_cycle():
     return summary
 
 def main():
+    if os.environ.get("PIPELINE_MODE", "whop_first") == "whop_first":
+        from whop_first import run, DATA
+        result = run(os.environ.get("APPROVED_CAMPAIGN_PATH", str(DATA / "approved_campaign.json")))
+        if result["status"] != "prepared":
+            raise SystemExit(2)
+        return
     print("Whop Clipping Autonomous System shuru ho raha hai (free stack)")
     print(f"Har {RUN_EVERY_HOURS} ghante me ek cycle")
     while True:
@@ -181,6 +187,6 @@ def main():
 if __name__ == "__main__":
     # Ek baar chalane ke liye: RUN_ONCE=1
     if os.environ.get("RUN_ONCE") == "1":
-        one_cycle()
+        main() if os.environ.get("PIPELINE_MODE", "whop_first") == "whop_first" else one_cycle()
     else:
         main()

@@ -1,81 +1,66 @@
-name: Whop Clipping 24/7
-
+name: Whop first preparation
 on:
   schedule:
-    # Har 6 ghante (UTC) - 00:00, 06:00, 12:00, 18:00
     - cron: '0 */6 * * *'
-  workflow_dispatch:  # manual trigger ke liye
-
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: whop-first
+  cancel-in-progress: false
 jobs:
-  clip-cycle:
+  prepare:
+    if: vars.WHOP_FIRST_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
+    timeout-minutes: 25
     steps:
-      - name: Code checkout karo
-        uses: actions/checkout@v4
-
-      - name: Python 3.11 setup
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-
-      - name: Dependencies install karo
+      - name: Install preparation dependencies
         run: |
           pip install -r orchestrator/requirements.txt
-
-      - name: Ollama setup (optional - fallback hai)
-        uses: actions/cache@v4
-        id: ollama-cache
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - uses: actions/cache/restore@v4
         with:
-          path: ~/.ollama
-          key: ollama-qwen25-7b-v1
-
-      - name: Ollama install aur model pull
-        run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
-          sleep 10
-          # Cache hit nahi hua to model pull karo (pehli baar slow hoga)
-          ollama pull qwen2.5:7b || echo "Model pull fail, fallback use hoga"
-        continue-on-error: true
-
-      - name: Clipping cycle chalao
+          path: orchestrator/data/llm_*
+          key: whop-llm-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: whop-llm-
+      - name: Load approved campaign
         env:
-          RUN_ONCE: '1'
-          OLLAMA_HOST: 'http://localhost:11434'
-          OLLAMA_MODEL: 'qwen2.5:7b'
-          WHOP_API_KEY: ${{ secrets.WHOP_API_KEY }}
-          RUN_EVERY_HOURS: '6'
-          ENABLE_YOUTUBE: 'false'
+          CAMPAIGN_JSON: ${{ secrets.APPROVED_CAMPAIGN_JSON }}
         run: |
-          cd orchestrator
-          python main.py
-
-      - name: Cycle report banao (artifacts kabhi khali nahi honge)
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          folder = Path('orchestrator/data')
+          folder.mkdir(parents=True, exist_ok=True)
+          (folder / 'approved_campaign.json').write_text(os.environ['CAMPAIGN_JSON'])
+          PY
+      - name: Preflight and prepare
+        env:
+          PIPELINE_MODE: whop_first
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          LLM_MAX_CALLS_PER_DAY: '2'
+          LLM_MAX_OUTPUT_TOKENS: '768'
         run: |
-          mkdir -p orchestrator/out orchestrator/data
-          cat > orchestrator/out/cycle_report.txt << EOF
-          Cycle: ${{ github.run_number }}
-          Run ID: ${{ github.run_id }}
-          Time (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          Status: completed
-          EOF
-          echo "Cycle report banaya"
-
-      - name: Output artifacts upload karo
-        uses: actions/upload-artifact@v4
+          python orchestrator/whop_first.py --preflight
+          python orchestrator/whop_first.py
+      - uses: actions/cache/save@v4
         if: always()
         with:
-          name: cycle-output-${{ github.run_number }}
+          path: orchestrator/data/llm_*
+          key: whop-llm-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: whop-preparation-${{ github.run_id }}
           path: |
             orchestrator/out/
-            orchestrator/data/
-          retention-days: 30
-          if-no-files-found: error
-
-      - name: Keepalive (60-day auto-disable se bachne ke liye)
-        run: |
-          # Ye workflow khud hi har 6h chalta hai, isliye active rehta hai
-          echo "Cycle complete: ${{ github.run_number }}"
+            orchestrator/data/whop_first_report.json
+            orchestrator/data/upload_packages.json
+          retention-days: 7
+          if-no-files-found: warn

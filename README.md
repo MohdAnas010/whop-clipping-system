@@ -1,3 +1,5 @@
+> Current default: Whop-first preparation with optional capped Gemini caption drafting. See [WHOP_FIRST.md](WHOP_FIRST.md). Instagram publishing and Whop submission in the older pipeline are placeholders. No unattended posting or earnings are verified.
+
 # Whop Clipping Autonomous Agent System
 
 100% free and open source multi-agent system for Whop affiliate short-form video automation. Runs 24/7 on any VPS with Docker.
