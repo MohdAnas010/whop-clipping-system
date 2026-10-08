@@ -1,0 +1,13 @@
+services:
+  instagram:
+    build: .
+    restart: unless-stopped
+    init: true
+    command: ["python", "-u", "orchestrator/instagram_worker.py"]
+    environment:
+      DATA_DIR: /app/data
+      IG_USER_ID: ${IG_USER_ID:-}
+      IG_ACCESS_TOKEN: ${IG_ACCESS_TOKEN:-}
+      META_API_VERSION: ${META_API_VERSION:-}
+    volumes:
+      - ./data:/app/data

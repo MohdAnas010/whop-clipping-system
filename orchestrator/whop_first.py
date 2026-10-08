@@ -16,6 +16,8 @@ from agents.llm import generate_json
 
 DATA = Path(os.getenv('DATA_DIR', str(Path(__file__).resolve().parent / 'data')))
 OUT = Path(os.getenv('RENDER_OUT', str(Path(__file__).resolve().parent / 'out')))
+EDITOR = Path(__file__).resolve().parents[1] / 'agents' / 'editor'
+RENDERER_VERSION = 'remotion-source-v1'
 
 
 def validate(campaign):
@@ -48,6 +50,8 @@ def validate(campaign):
                 errors.append('Clip start must be >=0; duration must be 5-90 seconds')
     if not shutil.which('ffmpeg') or not shutil.which('ffprobe'):
         errors.append('ffmpeg and ffprobe required')
+    if not shutil.which('node') or not (EDITOR / 'node_modules' / '@remotion' / 'renderer').is_dir():
+        errors.append('Remotion dependencies missing: install Node 22 and run npm install in agents/editor')
     return errors
 
 
@@ -80,16 +84,20 @@ def run(campaign_path, preflight=False):
             OUT.mkdir(parents=True, exist_ok=True)
             packages = []
             for index, clip in enumerate(campaign['clips']):
-                signature = hashlib.sha256(json.dumps([campaign, index, Path(source).stat().st_mtime_ns],
+                signature = hashlib.sha256(json.dumps([RENDERER_VERSION, campaign, index, Path(source).stat().st_mtime_ns],
                                                      sort_keys=True).encode()).hexdigest()[:16]
                 video = OUT / f'clip-{signature}.mp4'
                 if not video.exists():
                     temporary = OUT / f'clip-{signature}.partial.mp4'
-                    subprocess.run(['ffmpeg', '-nostdin', '-y', '-v', 'error', '-ss', str(clip['start']),
-                                    '-i', source, '-t', str(clip['duration']), '-vf',
-                                    'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2',
-                                    '-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac',
-                                    '-movflags', '+faststart', str(temporary)], check=True, timeout=600)
+                    render_input = DATA / f'render-{signature}.json'
+                    render_input.write_text(json.dumps({'sourceVideo': source,
+                        'start': float(clip['start']), 'duration': float(clip['duration']),
+                        'hook': clip.get('hook', ''), 'fit': clip.get('fit', 'contain'),
+                        'subtitles': clip.get('subtitles', [])}))
+                    subprocess.run(['node', str(EDITOR / 'scripts' / 'render.mjs'),
+                                    '--input', str(render_input.resolve()),
+                                    '--output', str(temporary.resolve())],
+                                   cwd=EDITOR, check=True, timeout=1200)
                     temporary.replace(video)
                 caption = clip.get('caption', '')
                 if not caption and os.getenv('GEMINI_API_KEY') and clip.get('transcript'):
@@ -101,11 +109,25 @@ def run(campaign_path, preflight=False):
                         caption = draft.get('caption', '')
                     except (RuntimeError, ValueError, requests_error):
                         caption = ''
+                media_base = os.getenv('PUBLIC_MEDIA_BASE_URL', '').rstrip('/')
+                if media_base and urlparse(media_base).scheme != 'https':
+                    raise ValueError('PUBLIC_MEDIA_BASE_URL must use HTTPS')
                 packages.append({'video_path': str(video), 'caption': caption,
+                                 'content_id': signature, 'language': 'en',
+                                 'video_url': media_base + '/' + video.name if media_base else '',
                                  'campaign_url': campaign['campaign_url'], 'requirements': campaign['requirements'],
                                  'status': 'awaiting_review_and_instagram_publish'})
             (DATA / 'upload_packages.json').write_text(json.dumps(packages, indent=2))
-            report.update(status='prepared', clips=len(packages),
+            queue_path = DATA / 'instagram_queue.json'
+            queue = json.loads(queue_path.read_text()) if queue_path.exists() else []
+            known = {item['content_id'] for item in queue}
+            for package in packages:
+                if package['video_url'] and package['caption'] and package['content_id'] not in known:
+                    queue.append(package)
+                    known.add(package['content_id'])
+            if queue:
+                queue_path.write_text(json.dumps(queue, indent=2))
+            report.update(status='prepared', renderer='remotion', clips=len(packages),
                           next_action='Review clips/captions, publish on Instagram, submit actual post URLs in Whop')
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             report['blockers'] = [f'Preparation failed: {type(error).__name__}']

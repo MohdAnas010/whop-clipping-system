@@ -1,0 +1,9 @@
+[
+  {
+    "content_id": "unique-video-sha256",
+    "video_url": "https://YOUR_MEDIA_HOST/clip.mp4",
+    "caption": "Factual English caption of the actual clip",
+    "language": "en",
+    "campaign_url": "https://contentrewards.com/c/campaigns/7308fb8c-6f87-4c31-b3b1-2cbf08919a54"
+  }
+]

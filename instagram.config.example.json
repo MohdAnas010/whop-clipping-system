@@ -1,0 +1,25 @@
+{
+  "enabled": false,
+  "instagram_username": "REPLACE_AFTER_OAUTH",
+  "instagram_user_id": "REPLACE_AFTER_OAUTH",
+  "campaign_url": "https://contentrewards.com/c/campaigns/7308fb8c-6f87-4c31-b3b1-2cbf08919a54",
+  "rules_verified": true,
+  "posting_slots": [
+    {
+      "timezone": "America/New_York",
+      "hour": 12
+    },
+    {
+      "timezone": "America/New_York",
+      "hour": 18
+    },
+    {
+      "timezone": "Europe/London",
+      "hour": 18
+    },
+    {
+      "timezone": "Australia/Sydney",
+      "hour": 18
+    }
+  ]
+}

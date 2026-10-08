@@ -1,1 +1,23 @@
-{"dependencies":{"@remotion/cli":"4.0.0","@remotion/google-fonts":"4.0.0","remotion":"4.0.0"},"description":"Remotion-based Editor agent for Whop affiliate clipping system - renders 9:16 Shorts/Reels","devDependencies":{"typescript":"^5.0.0"},"name":"whop-clip-editor","scripts":{"dev":"remotion studio","render":"node scripts/render.mjs","render:clip":"remotion render ClipComposition"},"version":"1.0.0"}
+{
+  "dependencies": {
+    "@remotion/cli": "4.0.502",
+    "@remotion/bundler": "4.0.502",
+    "@remotion/renderer": "4.0.502",
+    "remotion": "4.0.502",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "description": "Remotion-based Editor agent for Whop affiliate clipping system - renders 9:16 Shorts/Reels",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5"
+  },
+  "name": "whop-clip-editor",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "node scripts/render.mjs",
+    "render:clip": "remotion render ClipComposition"
+  },
+  "version": "1.0.0"
+}

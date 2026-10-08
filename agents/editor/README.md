@@ -1,50 +1,9 @@
-# Editor Agent - Remotion
+# Remotion editor
 
-Remotion-based video renderer for 9:16 Shorts/Reels (1080x1920, 30fps).
+Uses https://github.com/remotion-dev/remotion to render source clips with real audio and optional timed subtitles.
 
-## Setup
+Install Node 22, then `npm install`. The Whop-first Python workflow calls `scripts/render.mjs` automatically. Input JSON: `sourceVideo` (authorized absolute local path), `start`, `duration` (5–90 seconds), optional `hook`, `fit` (`contain` or `cover`) and `subtitles` (`start`, `end`, `text`, seconds relative to the clip).
 
-```bash
-cd ~/workspace/whop-clipping-system/agents/editor
-npm install
-```
+`node scripts/render.mjs --input /path/to/input.json --output /path/to/clip.mp4`
 
-## Dev Preview
-
-```bash
-npx remotion studio
-```
-
-## Render from Scribe output
-
-Scribe agent output JSON format:
-```json
-{
-  "hook": "Ye Whop offer miss mat karo",
-  "scriptLines": ["Line 1", "Line 2", "Line 3"],
-  "caption": "Top Whop Offer #affiliate",
-  "accentColor": "#00ff88"
-}
-```
-
-Render:
-```bash
-node scripts/render.mjs --input ../scribe/output.json --output ./out/clip.mp4
-```
-
-Ya direct Remotion CLI:
-```bash
-npx remotion render ClipComposition ./out/clip.mp4 --props='{"hook":"..."}'
-```
-
-## Pipeline
-
-1. **Scribe** → `output.json` (hook, scriptLines, caption)
-2. **Editor (Remotion)** → `clip.mp4` (1080x1920, 35 sec)
-3. **Dispatcher** → Instagram Reels / YouTube Shorts par upload
-
-## Customization
-
-- `src/ClipComposition.tsx` me colors, fonts, animations change karo
-- `src/Root.tsx` me duration, dimensions change karo
-- B-roll ya product screenshots ke liye `<Img>` ya `<Video>` components add karo
+Output: 1080×1920, 30 fps, H.264/AAC. Chromium is required; Remotion downloads its browser if absent. Set `REMOTION_BROWSER_EXECUTABLE` for an existing compatible browser. CPU rendering with concurrency 1; no LLM requests. Legacy text-only inputs still use `ClipComposition`.
